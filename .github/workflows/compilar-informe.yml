@@ -1,0 +1,45 @@
+name: Compilar informe
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Instalar Python y UV
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version-file: .python-version
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Instalar Typst
+        uses: typst-community/setup-typst@v4
+
+      - name: Instalar dependencias
+        run: uv sync --locked
+
+      - name: Generar resultados del análisis
+        run: uv run python main.py
+
+      - name: Compilar PDF
+        run: typst compile informe.typ informe.pdf
+
+      - name: Publicar PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe
+          path: informe.pdf
+          if-no-files-found: error
+          retention-days: 7
