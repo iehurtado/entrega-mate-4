@@ -1,3 +1,32 @@
+#let temp_celsius = (x) => calc.round(x * 41, digits: 1)
+
+#let cuadratica = json("outputs/quadratic.json")
+#let lineales = json("outputs/linear.json")
+#let multiple = json("outputs/multiple.json").at(0)
+
+/**
+ * Modelo cuadrático
+ **/
+#let qtemp = cuadratica.at(0)
+#qtemp.insert("f", x => qtemp.beta0 + qtemp.beta1 * x + qtemp.beta2 * calc.pow(x, 2))
+#qtemp.insert("df", x => qtemp.beta1 + 2 * qtemp.beta2 * x)
+
+/**
+ * Modelo lineal basado en `temp`
+ **/
+#let ltemp = lineales.find(x => x.variable == "temp")
+#ltemp.insert("f", x => ltemp.beta0 + ltemp.beta1 * x)
+#ltemp.insert("df", x => ltemp.beta1)
+
+/**
+ * Modelo lineal basado en `atemp`
+ **/
+#let latemp = lineales.find(x => x.variable == "atemp")
+#latemp.insert("f", x => latemp.beta0 + latemp.beta1 * x)
+#latemp.insert("df", x => latemp.beta1)
+
+// ---------------------------------------------------------------------------
+
 #title([ Informe Trabajo Práctico Mate 4 ])
 
 = Parte A — Complementos de Análisis Matemático
@@ -6,55 +35,21 @@
 
 === Parte 1 del A.1: Ajuste del Modelo Cuadrático
 
-#let temp_celsius = (norm) => calc.round(norm * 41, digits: 1)
-
-/**
- * Modelo cuadrático
- **/
-#let q = (
-  beta0: -1901.9557,
-  beta1: 21406.9313,
-  beta2: -15055.0254,
-)
-
-#q.insert("f", x => q.beta0 + q.beta1 * x + q.beta2 * calc.pow(x, 2))
-#q.insert("df", x => q.beta1 + 2 * q.beta2 * x)
-#q.insert("max", q.beta1/(-2*q.beta2)) // <- punto crítico de la df
-
-/**
- * Modelo lineal basado en `temp`
- **/
-#let ltemp = (
-  beta0: 1214.642119,
-  beta1: 6640.709999,
-  xmean: 0.4954,
-  ymean: 4504.3488,
-  sxx: 24.4606,
-  sxy: 162435.7313,
-  scr: 1078688585.1695404,
-  sce: 1660846806.8769715,
-  n: 731
-)
-
-#ltemp.insert("f", x => ltemp.beta0 + ltemp.beta1 * x)
-#ltemp.insert("df", x => ltemp.beta1)
-#ltemp.insert("stc", ltemp.scr + ltemp.sce)
-
 Ajustar un modelo cuadrático para estimar la cantidad de alquileres diarios (`cnt`, `y`) en función de la temperatura normalizada (`temp`, `x`):
 
 $ hat(y) = β_0 + β_1 x + β_2 x^2 $
 
-La recta de regresión lineal simple asume que por cada grado de aumento en la temperatura, la demanda sube en una proporción fija e indefinida. En el uso urbano de bicicletas esto no describe el comportamiento real: pedalear con un clima templado es agradable y estimula el uso, pero hacerlo bajo una ola de calor excesivo genera agotamiento y desincentiva los viajes. Formulamos un polinomio de segundo grado porque su término de curvatura ($β_2$) modela rendimientos decrecientes y permite la existencia de un valor óptimo. Ajustando por mínimos cuadrados sobre el dataset (np.polyfit(temp, cnt, 2)), se obtienen los coeficientes muestrales: $β_0 = #q.beta0$, $β_1 = #q.beta1$, $β_2 = #q.beta2$
+La recta de regresión lineal simple asume que por cada grado de aumento en la temperatura, la demanda sube en una proporción fija e indefinida. En el uso urbano de bicicletas esto no describe el comportamiento real: pedalear con un clima templado es agradable y estimula el uso, pero hacerlo bajo una ola de calor excesivo genera agotamiento y desincentiva los viajes. Formulamos un polinomio de segundo grado porque su término de curvatura ($β_2$) modela rendimientos decrecientes y permite la existencia de un valor óptimo. Ajustando por mínimos cuadrados sobre el dataset (np.polyfit(temp, cnt, 2)), se obtienen los coeficientes muestrales: $β_0 = #qtemp.beta0$, $β_1 = #qtemp.beta1$, $β_2 = #qtemp.beta2$
 
 Dando la ecuación estimada:
 
-$ hat(y) = #q.beta0 + #q.beta1 x + (#q.beta2) x^2 $
+$ hat(y) = #qtemp.beta0 + #qtemp.beta1 x + (#qtemp.beta2) x^2 $
 
-$β_0 = #q.beta0$: Ordenada al origen teórica (demanda cuando x=0, es decir a 0 °C de referencia). Al ser negativa, indica que a temperaturas de congelación el modelo analítico predice nula actividad ciclista.
+$β_0 = #qtemp.beta0$: Ordenada al origen teórica (demanda cuando x=0, es decir a 0 °C de referencia). Al ser negativa, indica que a temperaturas de congelación el modelo analítico predice nula actividad ciclista.
 
-$β_1 = #q.beta1 > 0$: Coeficiente lineal positivo que refleja el fuerte impulso inicial que produce el aumento térmico en los días frescos.
+$β_1 = #qtemp.beta1 > 0$: Coeficiente lineal positivo que refleja el fuerte impulso inicial que produce el aumento térmico en los días frescos.
 
-$β_2 = #q.beta2 < 0$: Coeficiente cuadrático negativo que le confiere a la curva su concavidad hacia abajo, modelando el freno y posterior descenso en el alquiler ante temperaturas elevadas.
+$β_2 = #qtemp.beta2 < 0$: Coeficiente cuadrático negativo que le confiere a la curva su concavidad hacia abajo, modelando el freno y posterior descenso en el alquiler ante temperaturas elevadas.
 
 
 === A.1 — Parte 2: Primera Derivada y Evaluación Numérica
@@ -67,27 +62,27 @@ $ (partial y) / (partial T) = (partial y) / (partial x) * 1/41 $
 
 Derivando la función cuadrática ajustada:
 
-$ (partial y) / (partial x) = β_1 + 2β_2x = #q.beta1 + 2(#q.beta2)x = #q.beta1 + (#{2*q.beta2})x $
+$ (partial y) / (partial x) = β_1 + 2β_2x = #qtemp.beta1 + 2(#qtemp.beta2)x = #qtemp.beta1 + (#{2*qtemp.beta2})x $
 
 Evaluamos en dos puntos dentro del rango observado $[0.0591; 0.8617]$:
 
 1. *Día fresco* ($x = 0.20$; ó 8.2 °C):
 
-$ (partial y) / (partial x) = #q.beta1 + (#{2*q.beta2}) (0.2) = #{q.df}(0.2) "bicicletas" / "unidad norm." $
+$ (partial y) / (partial x) = #qtemp.beta1 + (#{2*qtemp.beta2}) (0.2) = #{qtemp.df}(0.2) "bicicletas" / "unidad norm." $
 
 Dividiendo por 41:
 
-$ (partial y) / (partial T) = #{q.df}(0.2) / 41 ≈ #{q.df}(0.2) / 41} "bicicletas/°C" $
+$ (partial y) / (partial T) = #{qtemp.df}(0.2) / 41 ≈ #{qtemp.df}(0.2) / 41} "bicicletas/°C" $
 
 Es decir, a 8.2 °C, se espera que los alquileres diarios aumenten en aproximadamente 375 bicicletas por cada grado Celsius que sube la temperatura.
 
 2. *Día caluroso* ($x = 0.70$; ó 28.7 °C):
 
-$ (partial y)/(partial x) = #q.beta1 + (#{2*q.beta2}) (0.7) = #{q.df}(0.7) "bicicletas/unidad norm." $
+$ (partial y)/(partial x) = #qtemp.beta1 + (#{2*qtemp.beta2}) (0.7) = #{qtemp.df}(0.7) "bicicletas/unidad norm." $
 
 Dividiendo por 41:
 
-$ (partial y)/(partial T) = #(q.df)(0.7) / 41 approx #{(q.df)(0.7) / 41} "bicicletas/°C" $
+$ (partial y)/(partial T) = #(qtemp.df)(0.7) / 41 approx #{(qtemp.df)(0.7) / 41} "bicicletas/°C" $
 
 De esta manera vemos que, a 28.7 °C, la tasa cae a solo 8 bicicletas por grado Celsius.
 
@@ -99,7 +94,7 @@ Comparar con la derivada del modelo lineal ($y = β_0 + β_1 x$) y explicar qué
 Contrastamos analíticamente el comportamiento de ambas derivadas:
 
 - Recta: $(partial hat(y))/(partial x) = β_1 = #ltemp.beta1$ (constante en todo el dominio).
-- Parábola: $(partial hat(y))/(partial x) = #q.beta1 + (#{2*q.beta2}) x$ (función lineal decreciente de $x$).
+- Parábola: $(partial hat(y))/(partial x) = #qtemp.beta1 + (#{2*qtemp.beta2}) x$ (función lineal decreciente de $x$).
 
 El modelo lineal asume un efecto monotónico e infinito: postula que subir de 8 °C a 9 °C produce el mismo incremento de viajes que subir de 35 °C a 36 °C (+162 bicis/°C, calculado como #ltemp.beta1 / 41\), ignorando la fatiga por calor. El modelo cuadrático incorpora rendimientos decrecientes y confort térmico: el beneficio del calor se agota conforme sube la temperatura, hasta volverse perjudicial superado cierto umbral.
 
@@ -110,25 +105,25 @@ Hallar el punto crítico resolviendo $(partial y)/(partial x) \= 0$, clasificarl
 
 1. Cálculo del punto crítico: Buscamos la condición de primer orden:
 
-$ (partial y)/(partial x) = 0  =>  #q.beta1 - (#{2*q.beta2})x^* = 0  =>  x^* = #q.beta1 / #{-2*q.beta2} approx #{q.max} $
+$ (partial y)/(partial x) = 0  =>  #qtemp.beta1 - (#{2*qtemp.beta2})x^* = 0  =>  x^* = #qtemp.beta1 / #{-2*qtemp.beta2} approx #{qtemp.x_critico} $
 
 2. Clasificación con la derivada segunda:
 
-$ (partial^2 y) / (partial^2 x) = 2β_2 = 2(#q.beta2) = #{2*q.beta2} < 0 $
+$ (partial^2 y) / (partial^2 x) = 2β_2 = 2(#qtemp.beta2) = #{2*qtemp.beta2} < 0 $
 
 Al ser estrictamente negativa para todo x, se confirma que $x^*$ corresponde a un máximo absoluto de demanda esperada.s
 
 3. Verificación e interpretación en el dominio: Pasando a grados Celsius:
 
-$ T^* = #q.max * 41 °C ≈ #temp_celsius(q.max) °C $
+$ T^* = #qtemp.x_critico * 41 °C ≈ #temp_celsius(qtemp.x_critico) °C $
 
 Como las temperaturas del dataset oscilan entre $x \= 0.0591$ (2.4 °C) y $x \= 0.8617$ (35.3 °C), se comprueba que:
 
-$ 0.0591 <= #q.max <= 0.8617 $
+$ 0.0591 <= #qtemp.x_critico <= 0.8617 $
 
-El punto crítico cae dentro del rango efectivamente observado. Interpretación operativa: Alrededor de los #temp_celsius(q.max) °C se alcanza la temperatura de confort óptimo del sistema; en esos días la empresa debe prever el despliegue máximo de bicicletas disponibles en las estaciones para atender el pico de demanda.
+El punto crítico cae dentro del rango efectivamente observado. Interpretación operativa: Alrededor de los #temp_celsius(qtemp.x_critico) °C se alcanza la temperatura de confort óptimo del sistema; en esos días la empresa debe prever el despliegue máximo de bicicletas disponibles en las estaciones para atender el pico de demanda.
 
-Conclusión de A.1: A diferencia del modelo lineal (que asume un crecimiento infinito e irreal de la demanda a tasa constante), el modelo cuadrático captura la existencia de rendimientos decrecientes y un óptimo térmico. Dado que el punto crítico (T\* ≈ #temp_celsius(q.max) °C) pertenece al rango térmico registrado, se confirma que el límite de saturación de la demanda no constituye una extrapolación matemática, sino un fenómeno real del servicio en el período analizado.
+Conclusión de A.1: A diferencia del modelo lineal (que asume un crecimiento infinito e irreal de la demanda a tasa constante), el modelo cuadrático captura la existencia de rendimientos decrecientes y un óptimo térmico. Dado que el punto crítico (T\* ≈ #temp_celsius(qtemp.x_critico) °C) pertenece al rango térmico registrado, se confirma que el límite de saturación de la demanda no constituye una extrapolación matemática, sino un fenómeno real del servicio en el período analizado.
 
 
 == A.2 Derivadas parciales y ecuaciones normales
@@ -240,8 +235,8 @@ Evaluando las sumatorias sobre las $n \= 731$ observaciones de `temp` ($x$) y `c
 
 Ajuste por librería (np.polyfit(x, y, 1)):
 
-- $β_"1,lib" = 6640.709999$
-- $β_"0,lib" = 1214.642119$
+- $β_"1,lib" = #ltemp.beta1_lib$
+- $β_"0,lib" = #ltemp.beta0_lib$
 
 La discrepancia numérica es nula ($< 10^(-6)$), confirmando que las herramientas computacionales resuelven este mismo sistema analítico de derivadas parciales. Asimismo, coincide con los valores reportados en la tabla de regresión simple de la Parte B.2.
 
@@ -312,21 +307,11 @@ Funciona como salvaguarda algorítmica para interrumpir el bucle en caso de conv
 
 === Parte 4 del A.3: Comparación con Mínimos Cuadrados (MCO de B.5) y Modelo Final
 
-#let grad = (
-  beta0:  3303.3959,
-  beta1:  3584.6384,
-  beta2:  3620.3500,
-  beta3: -2731.7566,
-  beta4: -3050.2941,
-)
+#let coeficientes = json("outputs/coeficientes.json")
 
-#let mco = (
-  beta0:  3860.3685,
-  beta1:  2111.8136,
-  beta2:  5139.1524,
-  beta3: -3149.1098,
-  beta4: -4528.6748,
-)
+#let grad = coeficientes.map(row => row.gradiente)
+#let mco = coeficientes.map(row => row.matricial)
+#let diff = coeficientes.map(row => row.diferencia)
 
 Comparar la solución obtenida mediante el descenso del gradiente con la solución analítica exacta de mínimos cuadrados:
 
@@ -339,11 +324,11 @@ correspondiente a la sección B.5. Al contrastar los coeficientes del descenso d
 #table(
   columns: 4, align: right,
   [*Variable*],                                [*Gradiente*], [*MCO Exacto*], [*Diferencia*],
-  [Ordenada al origen ($β_0$)],                [#grad.beta0],  [#mco.beta0],  [#calc.abs(mco.beta0 - grad.beta0)],
-  [Temperatura (`temp`, $β_1$)],               [#grad.beta1],  [#mco.beta1],  [#calc.abs(mco.beta1 - grad.beta1)],
-  [Sensación térmica (`atemp`, $β_2$)],        [#grad.beta2],  [#mco.beta2],  [#calc.abs(mco.beta2 - grad.beta2)],
-  [Humedad (`hum`, $β_3$)],                    [#grad.beta3],  [#mco.beta3],  [#calc.abs(mco.beta3 - grad.beta3)],
-  [Velocidad del viento (`windspeed`, $β_4$)], [#grad.beta4],  [#mco.beta4],  [#calc.abs(mco.beta4 - grad.beta4)],
+  [Ordenada al origen ($β_0$)],                [#grad.at(0)],  [#mco.at(0)],  [#diff.at(0)],
+  [Temperatura (`temp`, $β_1$)],               [#grad.at(1)],  [#mco.at(1)],  [#diff.at(1)],
+  [Sensación térmica (`atemp`, $β_2$)],        [#grad.at(2)],  [#mco.at(2)],  [#diff.at(2)],
+  [Humedad (`hum`, $β_3$)],                    [#grad.at(3)],  [#mco.at(3)],  [#diff.at(3)],
+  [Velocidad del viento (`windspeed`, $β_4$)], [#grad.at(4)],  [#mco.at(4)],  [#diff.at(4)],
 )
 
 ==== Interpretación de la comparación:
@@ -362,7 +347,7 @@ Se estableció el puente práctico para escenarios multivariables donde la inver
 La estimación $sigma^2$ de la varianza para el modelo de regresión lineal simple sobre `temp` la obtenemos a partir de la suma de cuadrados de error:
 
 $
-sigma^2 &= "SCE"/(n - 2) = (sum_(i=1)^n (y_i - hat(y)_i)^2) / (n - 2) = #ltemp.sce / #{ltemp.n - 2} = #{ltemp.sce / (ltemp.n - 2)}
+sigma^2 &= "SCE"/(n - 2) = (sum_(i=1)^n (y_i - hat(y)_i)^2) / (n - 2) = #ltemp.sce / #{ltemp.n - 2} = #ltemp.sigma2
 $
 
 Exponemos la descomposición de la variabilidad en la siguiente tabla:
@@ -370,17 +355,16 @@ Exponemos la descomposición de la variabilidad en la siguiente tabla:
 #let anova = csv("outputs/b1_tabla_anova.csv")
 
 #table(
-  columns: 5,
+  align: right,
+  columns: 6,
   table.header(..anova.first().map(cell => [*#cell*])),
   ..anova.slice(1).flatten(),
 )
 
 A continuación calculamos el coeficiente de determinación, a partir de las sumas de cuadrados de error y total:
 
-#let r2 = 1 - ltemp.sce / ltemp.stc
-
 $
-R^2 = 1 - "SCE" / "STC" = 1 - #ltemp.sce / #ltemp.stc = #r2 approx #{calc.round(r2 * 100, digits: 2)} %
+R^2 = 1 - "SCE" / "STC" = 1 - #ltemp.sce / #ltemp.stc = #ltemp.r2 approx #{calc.round(ltemp.r2 * 100, digits: 2)} %
 $
 
 Este coeficiente indica qué proporción de la variabilidad se "explica" por el modelo de regresión. Esto es, en qué medida el uso de una recta de regresión para hacer las predicciones disminuye el error frente al uso de la media muestral como predicción para la variable dependiente. Es importante destacar que un valor alto de R² no significa que exista una relación causal entre las variables, ni que el modelo sea adecuado para realizar predicciones sobre nuevos datos.
@@ -388,31 +372,61 @@ Este coeficiente indica qué proporción de la variabilidad se "explica" por el 
 
 == B.2 - Regresión Lineal Simple
 
-Realizamos un análisis de regresión lineal simple entre cnt y diferentes variables. Presentamos la comparación en la tabla:
+#let interval = (inf, sup) => [\[#inf ; #sup\]]
 
-#let regresiones = csv("outputs/b2_regresiones_simples.csv")
+Realizamos un análisis de regresión lineal simple entre `cnt` y diferentes variables. Presentamos la comparación en las siguientes tablas:
 
-#text(size: 7pt)[
+// #text(size: 8pt)[
   #table(
-    columns: regresiones.first().len(),
-    align: center,
+    columns: 5,
+    align: right,
     inset: 3pt,
     stroke: 0.5pt,
     table.header(
-      [Variable],
-      [$beta_1$],
-      [$beta_0$],
-      [$sigma^2$],
-      [$R^2$],
-      [$R$],
+      [],
+      [$hat(beta)_1$],
+      [$hat(beta)_0$],
       [$"IC"(beta_1)$],
       [$"IC"(beta_0)$],
-      [$"ICM"(Y|x^*=0.65)$],
-      [$"IP"(Y|x^*=0.65)$]
     ),
-    ..regresiones.slice(1).flatten(),
+    ..lineales
+      .map(row => (
+        row.variable, row.beta1, row.beta0,
+        interval(row.icb1_inf, row.icb1_sup),
+        interval(row.icb0_inf, row.icb0_sup)
+      ))
+      .flatten()
+      .map(cell => [#cell]),
   )
-]
+// ]
+
+// #text(size: 8pt)[
+  #table(
+    columns: 6,
+    align: right,
+    inset: 3pt,
+    stroke: 0.5pt,
+    table.header(
+      [],
+      [$hat(sigma)^2$],
+      [$R^2$],
+      [$R$],
+      [$"ICM"(Y|x^*=0.65)$],
+      [$"IP"(Y|x^*=0.65)$],
+    ),
+    ..lineales
+      .map(row => (
+        row.variable,
+        row.sigma2,
+        row.r2,
+        row.r,
+        interval(row.icm_inf, row.icm_sup),
+        interval(row.ip_inf, row.ip_sup),
+      ))
+      .flatten()
+      .map(cell => [#cell]),
+  )
+// ]
 
 Observando la tabla encontramos que la regresión sobre la variable `atemp` muestra el mejor valor para $R^2$. Tomamos esto como un indicio de que esta regresión explica mejor la variabilidad de la muestra. Además, la utilización de la sensación térmica como predictor parecería tener más relación con el problema presentado.
 
@@ -422,6 +436,10 @@ A continuación presentamos el gráfico de dispersión, junto con la recta de re
 
 
 == B.3 - Test de Hipótesis
+
+#let hipotesis = json("outputs/hipotesis.json").at(0)
+#let t_critico = hipotesis.critico
+#let T = hipotesis.estadistico
 
 Se quiere verificar si la variable elegida tiene relación lineal con la cantidad de alquileres.
 
@@ -439,12 +457,9 @@ $
 T = frac(hat(beta)_1 - 0, sqrt(frac(hat(sigma)^2, S_(x x))))
 $
 
-#let t_critico = 1.9632234465207086
-
 El valor crítico $t(alpha/2, n-2)$ para $alpha=0.05$ según la tabla es: $#t_critico$
 
 Siguiendo la regla de decisión planteada:
-
 
 $
   "Rechazar" space H_0 space "si" space |T| > t(alpha/2, n-2)
@@ -452,15 +467,10 @@ $
 
 vemos como es $abs(T)$ respecto al valor crítico obtenido:
 
-#let beta1 = 7501.8339
-#let s2 = 2261360.8852
-#let sxx = 19.386132332570277
-#let T = calc.abs(beta1 / calc.sqrt(s2 / sxx))
-
 $
   abs(T) = abs(hat(beta)_1 / sqrt(hat(sigma)^2 / S_(x x)))
-    = abs(#beta1 / sqrt(#s2 / #sxx))
-    = #T > #t_critico = t(alpha/2, n-2)
+    = abs(#latemp.beta1 / sqrt(#latemp.sigma2 / #latemp.sxx))
+    approx #T > #t_critico = t(alpha/2, n-2)
 $
 
 Al rechazar $H_0$ estamos diciendo que la pendiente no es nula; esto quiere decir que existe algún grado de relación lineal entre la sensación térmica observada (`atemp`) y la cantidad bicicletas alquiladas (`cnt`).
@@ -468,19 +478,14 @@ Al rechazar $H_0$ estamos diciendo que la pendiente no es nula; esto quiere deci
 
 == B.4 - Intervalos para la respuesta media y predicción
 
-#let x_estrella = 0.65
-#let y_media = (ltemp.f)(x_estrella)
-#let ic_media_inf = 5387.597333429889
-#let ic_media_sup = 5674.609902742142
-#let ic_pred_inf = 2564.363958593135
-#let ic_pred_sup = 8497.843277578897
+#let y_media = (ltemp.f)(0.65)
 
-Para el modelo de regresión lineal simple con la variable `temp`, se desea cuantificar la incertidumbre en la estimación de la demanda esperada cuando la temperatura normalizada toma el valor fijo $x^* = #x_estrella$.
+Para el modelo de regresión lineal simple con la variable `temp`, se desea cuantificar la incertidumbre en la estimación de la demanda esperada cuando la temperatura normalizada toma el valor fijo $x^* = 0.65$.
 
 El valor puntual estimado de la respuesta media es:
 
 $
-  hat(y) = hat(beta)_0 + hat(beta)_1 x^* = #ltemp.beta0 + #ltemp.beta1 times #x_estrella = #y_media
+  hat(y) = hat(beta)_0 + hat(beta)_1 x^* = #ltemp.beta0 + #ltemp.beta1 times 0.65 = #y_media
 $
 
 === Intervalo de confianza para la respuesta media
@@ -491,13 +496,13 @@ $
   hat(y)(x^*) plus.minus t_(alpha/2, n - 2) sqrt(hat(sigma)^2 (1 / n + ((x^* - macron(x))^2) / S_(x x)))
 $
 
-Con $n = 731$, $alpha = 0.05$ y $x^* = #x_estrella$ se obtiene:
+Con $n = 731$, $alpha = 0.05$ y $x^* = 0.65$ se obtiene:
 
 $
-  "IC"(E(Y | x^*)) = [#ic_media_inf, #ic_media_sup]
+  "IC"(E(Y | x^*)) = [#ltemp.icm_inf, #ltemp.icm_sup]
 $
 
-Es decir, para una temperatura normalizada de 0.65, la cantidad esperada de alquileres se encuentra, con un 95 % de probabilidad, entre #ic_media_inf y #ic_media_sup bicicletas.
+Es decir, para una temperatura normalizada de 0.65, la cantidad esperada de alquileres se encuentra, con un 95 % de probabilidad, entre #ltemp.icm_inf y #ltemp.icm_sup bicicletas.
 
 === Intervalo de predicción para valores futuros
 
@@ -510,22 +515,19 @@ $
 Con la misma elección de $x^*$, resulta:
 
 $
-  "IP"(Y | x^*) = [#ic_pred_inf, #ic_pred_sup]
+  "IP"(Y | x^*) = [#ltemp.ip_inf, #ltemp.ip_sup]
 $
 
-Este intervalo es más ancho que el anterior, porque incorpora no solo la incertidumbre en la media esperada, sino también la variabilidad aleatoria propia de una observación individual. En consecuencia, para una temperatura de 0.65 la predicción puntual de alquileres es de #y_media bicicletas, pero un valor futuro individual podría caer entre #ic_pred_inf y #ic_pred_sup en aproximadamente el 95 % de los casos.
+Este intervalo es más ancho que el anterior, porque incorpora no solo la incertidumbre en la media esperada, sino también la variabilidad aleatoria propia de una observación individual. En consecuencia, para una temperatura de 0.65 la predicción puntual de alquileres es de #y_media bicicletas, pero un valor futuro individual podría caer entre #ltemp.ip_inf y #ltemp.ip_sup en aproximadamente el 95 % de los casos.
 
 == B.5 - Regresión Lineal Múltiple
 
 Se estimó por mínimos cuadrados el modelo de regresión múltiple para `cnt` sobre las variables `temp`, `atemp`, `hum` y `windspeed`. Presentamos los coeficientes obtenidos luego de resolver el sistema de ecuaciones en forma matricial con numpy:
 
-#let data = csv("outputs/b5_regresion_multiple.csv", row-type: dictionary)
+#let betas = ( multiple.beta0, multiple.beta1, multiple.beta2, multiple.beta3, multiple.beta4 )
 
-#let b = ()
-
-#for (i, row) in data.enumerate() {
-  b.push(float(row.coeficiente))
-  [- $beta_(#i) = #row.coeficiente$ (#row.variable)]
+#for (i, bi) in betas.enumerate() {
+  [- $beta_(#i) = #bi$]
 }
 
 De esta manera, el modelo nos queda:
@@ -533,26 +535,19 @@ De esta manera, el modelo nos queda:
 #let sign(x) = if x < 0 [ $-$ ] else [ $+$ ]
 
 $
-  hat(y) = #b.at(0)
-    #for (i, bb) in b.slice(1).enumerate(start: 1) {
+  hat(y) = #betas.at(0)
+    #for (i, bb) in betas.slice(1).enumerate(start: 1) {
       $&#sign(bb) #calc.abs(bb) dot x_(#i) $
-      if i == 2 { $\ $ }
+      // if i == 2 { $\ $ }
     }
 $
 
 Calculamos la variabilidad y coeficientes de determinación del modelo:
 
-#let ssr=1468850901.4568558
-#let stc=2739535392.0465117
-#let n = 731
-#let k = 4
-#let r2 = 1 - ssr/stc
-#let r2adj = 1 - ((1 - r2) * (n - k) / (n - k - 1))
-
-$ "SS"_r = "SCE" = sum (y_i - hat(y)_i)^2 = #ssr $
-$ sigma^2 = "SS"_r / (n-k-1) = #ssr / (#n - #k - 1) = #{ssr / (n - k - 1)} $
-$ R^2 = 1 - "SCE" / "STC" = 1 - #ssr / #stc = #r2 $
-$ R^2_"adj" = 1 - (1 - R^2) (n-k) / (n-k-1) = 1 - (1 - #r2) (#n - #k) / (#n - #k - 1) = #r2adj $
+$ "SS"_r = "SCE" = sum (y_i - hat(y)_i)^2 = #multiple.ssr $
+$ sigma^2 = "SS"_r / (n-k-1) = #multiple.ssr / (#multiple.n - #multiple.k - 1) = #{multiple.sigma2} $
+$ R^2 = 1 - "SCE" / "STC" = 1 - #multiple.ssr / #multiple.stc = #multiple.r2 $
+$ R^2_"adj" = 1 - (1 - R^2) (n-k) / (n-k-1) = 1 - (1 - #multiple.r2) (#multiple.n - #multiple.k) / (#multiple.n - #multiple.k - 1) = #multiple.r2_adj $
 
 Vemos que el valor ajustado de $R^2$ ronda el 46.3%. Si comparamos este valor con el $R^2$ obtenido para el modelo lineal de B.2, vemos que aquél es menor. Esto sugiere que el modelo múltiple se ajusta mejor.
 
