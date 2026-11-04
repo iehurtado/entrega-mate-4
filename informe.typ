@@ -561,7 +561,7 @@ Considerando, que la variable utilizada en el modelo simple es la sensación té
 
 Obligatoria. Una fila por interacción; agregar tantas como sea necesario.
 
-#let bitacora = csv("outputs/tabla.csv")
+#let bitacora = csv("anexo_ia.csv")
 
 #set table(
   stroke: (x, y) => if y == 0 { (bottom: 1.5pt + rgb("#0f3d64")) } else { 0.5pt + luma(180) },
