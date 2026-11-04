@@ -11,3 +11,4 @@ wheels/
 
 informe.pdf
 outputs/
+!outputs/tabla.csv
