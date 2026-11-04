@@ -6,7 +6,8 @@ import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
 from scipy.stats import t
-
+import os
+import pandas as pd
 from modelos.regresion_cuadratica import RegresionCuadratica
 from modelos.regresion_multiple import RegresionMultiple
 from modelos.regresion_simple import RegresionSimple
@@ -303,7 +304,44 @@ def comparar(modelo: RegresionMultiple, modelo_simple: RegresionSimple):
         f"Diferencia de R² ajustado frente al modelo simple: "
         f"{(modelo.r2_adj - modelo_simple.r2) * 100:.2f} puntos porcentuales."
     )
+columnas = [
+    "#",
+    "Fecha",
+    "Herramienta",
+    "Qué se le pidió",
+    "Resumen de la respuesta",
+    "¿Se aceptó?",
+    "Cambios realizados y motivo",
+    "Ítem afectado",
+]
 
+filas = [
+    [
+        "1",
+        "28/10/2026",
+        "Asistente IA (Gemini)",
+        "Consulta conceptual sobre cómo expresar la tasa marginal de la primera derivada en las unidades físicas del problema (°C) y revisión de la justificación geométrica de avanzar en sentido opuesto al gradiente (-∇f).",
+        "Explicó la aplicación de la regla de la cadena dividiendo por la escala de 41 para pasar a bicis/°C, y fundamentó que el vector gradiente apunta al máximo crecimiento local, por lo cual su opuesto asegura el máximo descenso.",
+        "Aceptado con cambios",
+        "Se tomaron los criterios teóricos, pero las evaluaciones numéricas de la derivada en los dos puntos (x=0.20 y x=0.70) y la ejecución del gradiente descendente se realizaron de forma independiente sobre los datos.",
+        "Secciones A.1 y A.3",
+    ],
+    [
+        "2",
+        "02/11/2026",
+        "Asistente IA (Gemini)",
+        "Asistencia en la sintaxis de Typst para maquetar las tablas de resultados y revisión de redacción para explicar con claridad por qué difieren numéricamente los coeficientes del gradiente respecto a MCO de B.5.",
+        "Proveyó la sintaxis en Typst para estructurar las tablas con estilos y sugirió aclarar que la discrepancia responde al corte fijo en 40 iteraciones mientras la función de costo continuaba en descenso.",
+        "Aceptado con cambios",
+        "Se adaptó el código de maquetación al diseño del documento y se integró la justificación conceptual destacando la concordancia en los signos del impacto físico de las variables climáticas.",
+        "Sección A.3 y Formato general",
+    ],
+]
+
+os.makedirs("outputs", exist_ok=True)
+pd.DataFrame(filas, columns=columnas).to_csv(
+    "outputs/tabla", index=False, encoding="utf-8-sig"
+)
 
 if __name__ == "__main__":
     main()
