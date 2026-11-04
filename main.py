@@ -340,7 +340,7 @@ filas = [
 
 os.makedirs("outputs", exist_ok=True)
 pd.DataFrame(filas, columns=columnas).to_csv(
-    "outputs/tabla", index=False, encoding="utf-8-sig"
+    "outputs/tabla.csv", index=False, encoding="utf-8-sig"
 )
 
 if __name__ == "__main__":
