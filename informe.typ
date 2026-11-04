@@ -552,3 +552,37 @@ $ R^2_"adj" = 1 - (1 - R^2) (n-k) / (n-k-1) = 1 - (1 - #multiple.r2) (#multiple.
 Vemos que el valor ajustado de $R^2$ ronda el 46.3%. Si comparamos este valor con el $R^2$ obtenido para el modelo lineal de B.2, vemos que aquél es menor. Esto sugiere que el modelo múltiple se ajusta mejor.
 
 Considerando, que la variable utilizada en el modelo simple es la sensación térmica, que se calcula en base a temperatura, humedad y velocidad del viento, no era previsible que el uso de estas tres variables agregara nueva información al modelo.
+
+
+
+#pagebreak()
+
+= Anexo I — Bitácora de uso de inteligencia artificial
+
+Obligatoria. Una fila por interacción; agregar tantas como sea necesario.
+
+#let bitacora = csv("outputs/tabla.csv")
+
+#set table(
+  stroke: (x, y) => if y == 0 { (bottom: 1.5pt + rgb("#0f3d64")) } else { 0.5pt + luma(180) },
+  fill: (x, y) => {
+    if y == 0 { rgb("#0f3d64") }
+    else if calc.even(y) { rgb("#f2f5f8") }
+    else { none }
+  }
+)
+
+#show table.cell.where(y: 0): set text(weight: "bold", fill: white, size: 8pt)
+#set text(size: 7.5pt)
+
+#table(
+  columns: (0.4fr, 0.9fr, 1.1fr, 1.8fr, 2.1fr, 0.9fr, 2fr, 0.9fr),
+  align: (col, row) => {
+    if row == 0 { center + horizon }
+    else if col == 0 { center + horizon }
+    else if col == 5 { center + horizon }
+    else { left + horizon }
+  },
+  table.header(..bitacora.first().map(cell => [*#cell*])),
+  ..bitacora.slice(1).flatten()
+)
