@@ -8,21 +8,21 @@
  * Modelo cuadrático
  **/
 #let qtemp = cuadratica.at(0)
-#qtemp.insert("f", x => qtemp.beta0 + qtemp.beta1 * x + qtemp.beta2 * calc.pow(x, 2))
-#qtemp.insert("df", x => qtemp.beta1 + 2 * qtemp.beta2 * x)
+#qtemp.insert("f", x => calc.round(qtemp.beta0 + qtemp.beta1 * x + qtemp.beta2 * calc.pow(x, 2), digits: 4))
+#qtemp.insert("df", x => calc.round(qtemp.beta1 + 2 * qtemp.beta2 * x, digits: 4))
 
 /**
  * Modelo lineal basado en `temp`
  **/
 #let ltemp = lineales.find(x => x.variable == "temp")
-#ltemp.insert("f", x => ltemp.beta0 + ltemp.beta1 * x)
+#ltemp.insert("f", x => calc.round(ltemp.beta0 + ltemp.beta1 * x, digits: 4))
 #ltemp.insert("df", x => ltemp.beta1)
 
 /**
  * Modelo lineal basado en `atemp`
  **/
 #let latemp = lineales.find(x => x.variable == "atemp")
-#latemp.insert("f", x => latemp.beta0 + latemp.beta1 * x)
+#latemp.insert("f", x => calc.round(latemp.beta0 + latemp.beta1 * x, digits: 4))
 #latemp.insert("df", x => latemp.beta1)
 
 // ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ La recta de regresión lineal simple asume que por cada grado de aumento en la t
 
 Dando la ecuación estimada:
 
-$ hat(y) = #qtemp.beta0 + #qtemp.beta1 x + (#qtemp.beta2) x^2 $
+$ hat(y) = #qtemp.beta0 + #qtemp.beta1 x - #calc.abs(qtemp.beta2) x^2 $
 
 $β_0 = #qtemp.beta0$: Ordenada al origen teórica (demanda cuando x=0, es decir a 0 °C de referencia). Al ser negativa, indica que a temperaturas de congelación el modelo analítico predice nula actividad ciclista.
 
@@ -62,27 +62,27 @@ $ (partial y) / (partial T) = (partial y) / (partial x) * 1/41 $
 
 Derivando la función cuadrática ajustada:
 
-$ (partial y) / (partial x) = β_1 + 2β_2x = #qtemp.beta1 + 2(#qtemp.beta2)x = #qtemp.beta1 + (#{2*qtemp.beta2})x $
+$ (partial y) / (partial x) = β_1 + 2β_2x = #qtemp.beta1 + 2(#qtemp.beta2)x = #qtemp.beta1 - #calc.abs(2*qtemp.beta2)x $
 
 Evaluamos en dos puntos dentro del rango observado $[0.0591; 0.8617]$:
 
 1. *Día fresco* ($x = 0.20$; ó 8.2 °C):
 
-$ (partial y) / (partial x) = #qtemp.beta1 + (#{2*qtemp.beta2}) (0.2) = #{qtemp.df}(0.2) "bicicletas" / "unidad norm." $
+$ (partial y) / (partial x) = #qtemp.beta1 - #calc.abs(2*qtemp.beta2) (0.2) = #{qtemp.df}(0.2) "bicicletas" / "unidad norm." $
 
 Dividiendo por 41:
 
-$ (partial y) / (partial T) = #{qtemp.df}(0.2) / 41 ≈ #{qtemp.df}(0.2) / 41} "bicicletas/°C" $
+$ (partial y) / (partial T) = #{qtemp.df}(0.2) / 41 ≈ #calc.round((qtemp.df)(0.2) / 41, digits: 4) "bicicletas/°C" $
 
 Es decir, a 8.2 °C, se espera que los alquileres diarios aumenten en aproximadamente 375 bicicletas por cada grado Celsius que sube la temperatura.
 
 2. *Día caluroso* ($x = 0.70$; ó 28.7 °C):
 
-$ (partial y)/(partial x) = #qtemp.beta1 + (#{2*qtemp.beta2}) (0.7) = #{qtemp.df}(0.7) "bicicletas/unidad norm." $
+$ (partial y)/(partial x) = #qtemp.beta1 - #calc.abs(2*qtemp.beta2) (0.7) = #{qtemp.df}(0.7) "bicicletas/unidad norm." $
 
 Dividiendo por 41:
 
-$ (partial y)/(partial T) = #(qtemp.df)(0.7) / 41 approx #{(qtemp.df)(0.7) / 41} "bicicletas/°C" $
+$ (partial y)/(partial T) = #(qtemp.df)(0.7) / 41 approx #calc.round((qtemp.df)(0.7) / 41, digits: 4) "bicicletas/°C" $
 
 De esta manera vemos que, a 28.7 °C, la tasa cae a solo 8 bicicletas por grado Celsius.
 
@@ -94,7 +94,7 @@ Comparar con la derivada del modelo lineal ($y = β_0 + β_1 x$) y explicar qué
 Contrastamos analíticamente el comportamiento de ambas derivadas:
 
 - Recta: $(partial hat(y))/(partial x) = β_1 = #ltemp.beta1$ (constante en todo el dominio).
-- Parábola: $(partial hat(y))/(partial x) = #qtemp.beta1 + (#{2*qtemp.beta2}) x$ (función lineal decreciente de $x$).
+- Parábola: $(partial hat(y))/(partial x) = beta_1 + 2 beta_2 = #qtemp.beta1 - #calc.abs(2*qtemp.beta2) x$ (función lineal decreciente de $x$).
 
 El modelo lineal asume un efecto monotónico e infinito: postula que subir de 8 °C a 9 °C produce el mismo incremento de viajes que subir de 35 °C a 36 °C (+162 bicis/°C, calculado como #ltemp.beta1 / 41\), ignorando la fatiga por calor. El modelo cuadrático incorpora rendimientos decrecientes y confort térmico: el beneficio del calor se agota conforme sube la temperatura, hasta volverse perjudicial superado cierto umbral.
 
@@ -105,13 +105,13 @@ Hallar el punto crítico resolviendo $(partial y)/(partial x) \= 0$, clasificarl
 
 1. Cálculo del punto crítico: Buscamos la condición de primer orden:
 
-$ (partial y)/(partial x) = 0  =>  #qtemp.beta1 - (#{2*qtemp.beta2})x^* = 0  =>  x^* = #qtemp.beta1 / #{-2*qtemp.beta2} approx #{qtemp.x_critico} $
+$ (partial y)/(partial x) = 0  =>  #qtemp.beta1 - #calc.abs(2*qtemp.beta2)x^* = 0  =>  x^* = #qtemp.beta1 / #{-2*qtemp.beta2} approx #{qtemp.x_critico} $
 
 2. Clasificación con la derivada segunda:
 
 $ (partial^2 y) / (partial^2 x) = 2β_2 = 2(#qtemp.beta2) = #{2*qtemp.beta2} < 0 $
 
-Al ser estrictamente negativa para todo x, se confirma que $x^*$ corresponde a un máximo absoluto de demanda esperada.s
+Al ser estrictamente negativa para todo x, se confirma que $x^*$ corresponde a un máximo absoluto de demanda esperada.
 
 3. Verificación e interpretación en el dominio: Pasando a grados Celsius:
 
