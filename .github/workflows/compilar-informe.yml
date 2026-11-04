@@ -43,3 +43,4 @@ jobs:
           path: informe.pdf
           if-no-files-found: error
           retention-days: 7
+          archive: false
