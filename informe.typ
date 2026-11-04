@@ -35,26 +35,12 @@
 
 === Parte 1 del A.1: Ajuste del Modelo Cuadrático
 
-Ajustar un modelo cuadrático para estimar la cantidad de alquileres diarios (`cnt`, `y`) en función de la temperatura normalizada (`temp`, `x`):
+Ajustamos el modelo cuadrático $hat(y) = β_0 + β_1 x + β_2 x^2$ para estimar la cantidad de alquileres diarios (`cnt`, `y`) en función de la temperatura normalizada (`temp`, `x`). Para ello utilizamos la función `polyfit` de NumPy que plantea y resuelve en forma matricial el sistema de ecuaciones normales, obteniendo la recta de estimación:
 
-$ hat(y) = β_0 + β_1 x + β_2 x^2 $
-
-La recta de regresión lineal simple asume que por cada grado de aumento en la temperatura, la demanda sube en una proporción fija e indefinida. En el uso urbano de bicicletas esto no describe el comportamiento real: pedalear con un clima templado es agradable y estimula el uso, pero hacerlo bajo una ola de calor excesivo genera agotamiento y desincentiva los viajes. Formulamos un polinomio de segundo grado porque su término de curvatura ($β_2$) modela rendimientos decrecientes y permite la existencia de un valor óptimo. Ajustando por mínimos cuadrados sobre el dataset (np.polyfit(temp, cnt, 2)), se obtienen los coeficientes muestrales: $β_0 = #qtemp.beta0$, $β_1 = #qtemp.beta1$, $β_2 = #qtemp.beta2$
-
-Dando la ecuación estimada:
-
-$ hat(y) = #qtemp.beta0 + #qtemp.beta1 x - #calc.abs(qtemp.beta2) x^2 $
-
-$β_0 = #qtemp.beta0$: Ordenada al origen teórica (demanda cuando x=0, es decir a 0 °C de referencia). Al ser negativa, indica que a temperaturas de congelación el modelo analítico predice nula actividad ciclista.
-
-$β_1 = #qtemp.beta1 > 0$: Coeficiente lineal positivo que refleja el fuerte impulso inicial que produce el aumento térmico en los días frescos.
-
-$β_2 = #qtemp.beta2 < 0$: Coeficiente cuadrático negativo que le confiere a la curva su concavidad hacia abajo, modelando el freno y posterior descenso en el alquiler ante temperaturas elevadas.
+$ hat(y) =  #qtemp.beta1 x - #calc.abs(qtemp.beta2) x^2 - #calc.abs(qtemp.beta0) $
 
 
 === A.1 — Parte 2: Primera Derivada y Evaluación Numérica
-
-Calcular analíticamente $partial hat(y) slash partial x$, evaluarla en dos valores de $x$ que cubran el rango observado e interpretar el resultado en las unidades físicas del problema.
 
 La derivada representa la tasa instantánea de cambio en la demanda ante variaciones infinitesimales de temperatura. En el modelo viene expresada en bicicletas/unidad norm. Para convertirla a unidades del mundo real (bicicletas/°C), aplicamos la regla de la cadena sabiendo que $T = 41 x$:
 
@@ -66,7 +52,10 @@ $ (partial y) / (partial x) = β_1 + 2β_2x = #qtemp.beta1 + 2(#qtemp.beta2)x = 
 
 Evaluamos en dos puntos dentro del rango observado $[0.0591; 0.8617]$:
 
-1. *Día fresco* ($x = 0.20$; ó 8.2 °C):
+
+==== Día fresco ($x = 0.2$; ó 8.2 °C):
+
+Evaluamos la derivada con $x = 0.2$, que corresponde a unos 8.2 ºC:
 
 $ (partial y) / (partial x) = #qtemp.beta1 - #calc.abs(2*qtemp.beta2) (0.2) = #{qtemp.df}(0.2) "bicicletas" / "unidad norm." $
 
@@ -76,121 +65,135 @@ $ (partial y) / (partial T) = #{qtemp.df}(0.2) / 41 ≈ #calc.round((qtemp.df)(0
 
 Es decir, a 8.2 °C, se espera que los alquileres diarios aumenten en aproximadamente 375 bicicletas por cada grado Celsius que sube la temperatura.
 
-2. *Día caluroso* ($x = 0.70$; ó 28.7 °C):
 
+==== Día caluroso ($x = 0.7$; ó 28.7 °C):
+
+Evaluamos la derivada con $x = 0.7$, que corresponde a unos 28.7 ºC:
 $ (partial y)/(partial x) = #qtemp.beta1 - #calc.abs(2*qtemp.beta2) (0.7) = #{qtemp.df}(0.7) "bicicletas/unidad norm." $
 
 Dividiendo por 41:
-
 $ (partial y)/(partial T) = #(qtemp.df)(0.7) / 41 approx #calc.round((qtemp.df)(0.7) / 41, digits: 4) "bicicletas/°C" $
 
-De esta manera vemos que, a 28.7 °C, la tasa cae a solo 8 bicicletas por grado Celsius.
+De esta manera vemos que a 28.7 °C la tasa cae a solo 8 bicicletas por grado Celsius de incremento.
 
 
 === A.1 — Parte 3: Contraste Conceptual entre Modelos
 
-Comparar con la derivada del modelo lineal ($y = β_0 + β_1 x$) y explicar qué supone cada uno sobre el fenómeno.
+Para el modelo lineal, tenemos que la derivada es la pendiente de la recta:
 
-Contrastamos analíticamente el comportamiento de ambas derivadas:
+$(partial hat(y))/(partial x) = β_1 = #ltemp.beta1$ (constante en todo el dominio).
 
-- Recta: $(partial hat(y))/(partial x) = β_1 = #ltemp.beta1$ (constante en todo el dominio).
-- Parábola: $(partial hat(y))/(partial x) = beta_1 + 2 beta_2 = #qtemp.beta1 - #calc.abs(2*qtemp.beta2) x$ (función lineal decreciente de $x$).
+Esto quiere decir que la demanda crece en forma constante a medida que aumenta la temperatura; algo que resulta contraituitivo: para el modelo lineal, subir de 8 °C a 9 °C produce el mismo incremento de viajes que subir de 35 °C a 36 °C (+162 bicis/°C, calculado como #ltemp.beta1 / 41\), ignorando el efecto del calor en los ciclistas.
 
-El modelo lineal asume un efecto monotónico e infinito: postula que subir de 8 °C a 9 °C produce el mismo incremento de viajes que subir de 35 °C a 36 °C (+162 bicis/°C, calculado como #ltemp.beta1 / 41\), ignorando la fatiga por calor. El modelo cuadrático incorpora rendimientos decrecientes y confort térmico: el beneficio del calor se agota conforme sube la temperatura, hasta volverse perjudicial superado cierto umbral.
+En el modelo cuadrático, en cambio, la derivada es una recta decreciente:
+
+$(partial hat(y))/(partial x) = beta_1 + 2 beta_2 = #qtemp.beta1 - #calc.abs(2*qtemp.beta2) x$
+
+Esta recta decreciente indica que la demanda aumenta más suavemente a medida que se incrementa la temperatura, hasta darse vuelta por completo cuando la temperatura es demasiado alta. Un modelo como este luce más adecuado: pedalear con un clima templado es agradable y estimula el uso de la bicicleta, pero hacerlo bajo el calor excesivo resulta poco grato, de modo que es esperable que la demanda de bicicletas disminuya a partir de cierto punto.
 
 
 === A.1 — Parte 4: Punto Crítico y Clasificación
 
-Hallar el punto crítico resolviendo $(partial y)/(partial x) \= 0$, clasificarlo con la derivada segunda y verificar si cae dentro de las temperaturas reales registradas, interpretando el resultado en el contexto del negocio.
-
-1. Cálculo del punto crítico: Buscamos la condición de primer orden:
+Igualamos la derivada a 0 para hallar el punto crítico:
 
 $ (partial y)/(partial x) = 0  =>  #qtemp.beta1 - #calc.abs(2*qtemp.beta2)x^* = 0  =>  x^* = #qtemp.beta1 / #{-2*qtemp.beta2} approx #{qtemp.x_critico} $
 
-2. Clasificación con la derivada segunda:
-
-$ (partial^2 y) / (partial^2 x) = 2β_2 = 2(#qtemp.beta2) = #{2*qtemp.beta2} < 0 $
-
-Al ser estrictamente negativa para todo x, se confirma que $x^*$ corresponde a un máximo absoluto de demanda esperada.
-
-3. Verificación e interpretación en el dominio: Pasando a grados Celsius:
-
-$ T^* = #qtemp.x_critico * 41 °C ≈ #temp_celsius(qtemp.x_critico) °C $
-
-Como las temperaturas del dataset oscilan entre $x \= 0.0591$ (2.4 °C) y $x \= 0.8617$ (35.3 °C), se comprueba que:
+Es decir, el punto crítico es $T^* = #qtemp.x_critico * 41 °C ≈ #temp_celsius(qtemp.x_critico) °C$. Como las temperaturas del dataset oscilan entre $x \= 0.0591$ (2.4 °C) y $x \= 0.8617$ (35.3 °C), se comprueba que:
 
 $ 0.0591 <= #qtemp.x_critico <= 0.8617 $
 
-El punto crítico cae dentro del rango efectivamente observado. Interpretación operativa: Alrededor de los #temp_celsius(qtemp.x_critico) °C se alcanza la temperatura de confort óptimo del sistema; en esos días la empresa debe prever el despliegue máximo de bicicletas disponibles en las estaciones para atender el pico de demanda.
+Ahora queremos saber si se trata de un máximo. Para ello calculamos la derivada segunda:
 
-Conclusión de A.1: A diferencia del modelo lineal (que asume un crecimiento infinito e irreal de la demanda a tasa constante), el modelo cuadrático captura la existencia de rendimientos decrecientes y un óptimo térmico. Dado que el punto crítico (T\* ≈ #temp_celsius(qtemp.x_critico) °C) pertenece al rango térmico registrado, se confirma que el límite de saturación de la demanda no constituye una extrapolación matemática, sino un fenómeno real del servicio en el período analizado.
+$ (partial^2 y) / (partial^2 x) = 2β_2 = 2(#qtemp.beta2) = #{2*qtemp.beta2} $
 
+Vemos que es negativa, lo que indica que la función es cóncava. Luego, el punto crítico hallado es un máximo global.
+
+Respecto al punto hallado, observamos que se trata de una temperatura alta, de alrededor de #temp_celsius(qtemp.x_critico) °C y esto explica adecuadamente por qué se alcanza el máximo de demanda en este punto. Intuitivamente, es esperable que a partir de este punto la demanda decaiga debido al calor. Esta es una diferencia clave con respecto al modelo lineal, que supone que la demanda seguirá creciendo, pues al tratarse de una recta no posee máximos ni mínimos más allá de los impuestos por el rango de los datos.
 
 == A.2 Derivadas parciales y ecuaciones normales
 
 === Parte 1 del A.2: Planteo de la Función de Desviaciones y Cálculo Manual de Derivadas Parciales
 
-Para la regresión lineal simple de cnt sobre temp, la suma de los cuadrados de las desviaciones verticales es una función de dos variables, los parámetros de la recta:
+Desarrollamos a continuación las derivadas parciales de la suma de cuadrados de error
 
-$ f(b_0, b_1) = sum_(i=1)^n [y_i - (b_0 + b_1x_i)]^2 $
+$ f(b_0, b_1) = sum_(i=1)^n [y_i - (b_0 + b_1x_i)]^2 = sum_(i=1)^n [y_i - b_0 - b_1x_i]^2 $
 
-Cada punto observado $(x_i, y_i)$ presenta un residuo vertical respecto a la recta tentativa: $e_i = y_i - (b_0 + b_1 x_i)$. Para evitar que las diferencias positivas y negativas se cancelen mutuamente y para penalizar con mayor peso las desviaciones grandes, se define la función objetivo sumando los residuos al cuadrado (criterio de mínimos cuadrados). Geométricamente, $f(b_0, b_1)$ es una superficie convexa (un paraboloide) con un único mínimo global. Por cálculo en varias variables, para hallar el punto donde se minimiza la suma de errores, el vector gradiente debe anularse $(nabla f \= 0)$, lo que exige calcular analíticamente las derivadas parciales con respecto a $b_0$ y $b_1$ aplicando la regla de la cadena $\[u^2\]' \= 2*u*u'$:
+==== Derivada parcial con respecto a $b_0$
 
-Respecto a $b_0$:
+Comenzamos derivando el cuadrado, por regla de la cadena:
 
-$ (partial f)/(partial b_0) &= sum_(i=1)^n 2*(y_i - b_0 - b_1x_i) * (partial f) /(partial b_0)(y_i - b_0 - b_1x_i) \
-  &= sum_(i=1)^n 2(y_i - b_0 - b_1x_i) * (-1) \
-  &= -2 sum_(i=1)^n (y_i - b_0 - b_1x_i) $
+$ (partial f)/(partial b_0) &= sum_(i=1)^n 2(y_i - b_0 - b_1x_i) dot (partial f) /(partial b_0)(y_i - b_0 - b_1x_i) $
 
-Respecto a $b_1$:
+Como los términos $y_i$ y $b_1x_i$ son constantes con respecto a $b_0$, nos queda que:
 
-$ (partial f)/(partial b_1) &= sum_(i=1)^n 2*(y_i - b_0 - b_1x_i) * (partial f) /(partial b_1)(y_i - b_0 - b_1x_i) \
-  &= sum_(i=1)^n 2*(y_i - b_0 - b_1x_i) (-x_i) \
-  &= -2 sum_(i=1)^n x_i (y_i - b_0 - b_1x_i) $
+$ (partial f) /(partial b_0)(y_i - b_0 - b_1x_i) = -1 => (partial f)/(partial b_0) &= sum_(i=1)^n 2(y_i - b_0 - b_1x_i) dot (-1) $
+
+Y por último, sacamos los factores constantes y nos queda:
+
+$ (partial f)/(partial b_0) = -2 sum_(i=1)^n (y_i - b_0 - b_1x_i) $
+
+==== Derivada parcial con respecto a $b_1$:
+
+Nuevamente, comenzamos derivando el cuadrado:
+
+$ (partial f)/(partial b_1) &= sum_(i=1)^n 2 (y_i - b_0 - b_1x_i) dot (partial f) /(partial b_1)(y_i - b_0 - b_1x_i) $
+
+Aquí $y_i$ y $b_0$ son constantes con respecto a $b_1$, de modo que:
+
+$ (partial f) /(partial b_1)(y_i - b_0 - b_1x_i) = -x_i => (partial f)/(partial b_1) &= sum_(i=1)^n 2(y_i - b_0 - b_1x_i) dot (-x_i) $
+
+Luego nos queda:
+
+$ (partial f)/(partial b_1) = -2 sum_(i=1)^n x_i (y_i - b_0 - b_1x_i) $
 
 
 === Parte 2 del A.2: Deducción del Sistema de Ecuaciones Normales
 
-Igualar ambas derivadas parciales a cero y armar el sistema algebraico conocido como Ecuaciones Normales.
+1. Comenzamos igualando las derivadas a 0 para encontrar sus puntos críticos:
 
-Al imponer la condición de punto estacionario ($(partial f)/(partial b_0) = 0$ y $(partial f)/(partial b_1) = 0$), se divide por \-2 y se distribuye el operador de sumatoria:
+$
+-2 sum_(i=1)^n (y_i - b_0 - b_1x_i) &= 0 \
+-2 sum_(i=1)^n x_i (y_i - b_0 - b_1x_i) &= 0
+$
 
-Para la primera derivada:
+2. Dividimos por $-2$ ambos lados en cada expresión y distribuimos sumatorias:
 
-$ sum_(i=1)^n (y_i - b_0 - b_1x_i) = 0  =>  sum_(i=1)^n y_i - sum_(i=1)^n b_0 - b_1 sum_(i=1)^n x_i = 0 $
+$
+sum_(i=1)^n (y_i - b_0 - b_1x_i) &= 0 \
+sum_(i=1)^n x_i (y_i - b_0 - b_1x_i) &= 0
+$
 
-Como sumar una constante $b_0$ un total de n veces equivale a $n b_0$, reordenamos:
+3. Distribuimos las sumatorias:
 
-$ n b_0 + b_1 sum_(i=1)^n x_i = sum_(i=1)^n y_i  &  "--- (Ecuación 1)" $
+$
+sum_(i=1)^n (y_i - b_0 - b_1x_i) = 0  &=>  sum_(i=1)^n y_i - sum_(i=1)^n b_0 - b_1 sum_(i=1)^n x_i = 0 \
+sum_(i=1)^n x_i (y_i - b_0 - b_1 x_i) = 0  &=>  sum_(i=1)^n x_i y_i - b_0 sum_(i=1)^n x_i - b_1 sum_(i=1)^n x_i^2 = 0
+$
 
-Sentido geométrico: Esta condición equivale a que la suma total de los residuos sea cero ($sum_(i=1)^n e_i \= 0$), lo que obliga a la recta ajustada a atravesar siempre el centro de masa de la nube de datos $(macron(x), macron(y))$.
+4. Reordenamos:
 
-Para la segunda derivada:
-
-$ sum_(i=1)^n x_i (y_i - b_0 - b_1 x_i) = 0  =>  sum_(i=1)^n x_i y_i - b_0 sum_(i=1)^n x_i - b_1 sum_(i=1)^n x_i^2 = 0 $
-
-Reordenando:
-
-$ b_0 sum_(i=1)^n x_i + b_1 sum_(i=1)^n x_i^2 = sum_(i=1)^n x_i y_i    "--- (Ecuación 2)" $
-
-Sentido estadístico: Esta condición asegura que los residuos resultantes no presenten correlación lineal con la variable predictora x.
-
+$
+n b_0 + b_1 sum_(i=1)^n x_i &= sum_(i=1)^n y_i  &" (Ecuación 1)" \
+b_0 sum_(i=1)^n x_i + b_1 sum_(i=1)^n x_i^2 &= sum_(i=1)^n x_i y_i    &" (Ecuación 2)"
+$
 
 === Parte 3 del A.2: Resolución Algebraica y Deducción de $β_1$ y $β_0$
 
 Resolver algebraicamente el sistema de ecuaciones normales hasta llegar a las expresiones de mínimos cuadrados: $β_1 \= S_"xy" / S_"xx"$ y $β_0 \= macron(y) - β_1 macron(x)$.
 
-Se resuelve el sistema lineal de 2x2 por el método de sustitución:
+Se resuelve el sistema lineal de 2$times$2 por el método de sustitución:
 
 1. De la (Ecuación 1) despejamos $b_0$ dividiendo por $n$:
 
-$ b_0 = (sum y_i / n) - b_1 (sum x_i / n)  =>  β_0 = macron(y) - β_1 macron(x) $
+$ b_0 = (sum y_i) / n - b_1 (sum x_i) / n  =>  b_0 = macron(y) - b_1 macron(x) $
 
 2. Sustituimos esta expresión en la (Ecuación 2):
 
-$ (macron(y) - b_1 macron(x)) sum x_i + b_1 sum x_i^2 = sum x_i y_i $
-
-$ macron(y) sum x_i - b_1 macron(x) sum x_i + b_1 sum x_i^2 = sum x_i y_i $
+$
+  (macron(y) - b_1 macron(x)) & sum x_i + b_1 sum x_i^2 = sum x_i y_i \
+    &=> macron(y) sum x_i - b_1 macron(x) sum x_i + b_1 sum x_i^2 = sum x_i y_i \
+    &=> b_1 sum x_i^2 - b_1 macron(x) sum x_i = sum x_i y_i - macron(y) sum x_i
+$
 
 3. Recordando que $sum x_i \= n macron(x)$, se cumple que $macron(y) sum x_i \= n macron(x) macron(y) \= (sum x_i) (sum y_i) / n$, y que $macron(x) sum x_i \= n macron(x)^2 \= (sum x_i)^2 / n$. Agrupando los términos con factor común $b_1$:
 
@@ -215,40 +218,38 @@ $
 
 === Parte 4 del A.2: Cálculo Numérico, Contrastación y Recta Obtenida
 
-Calcular $β_0$ y $β_1$ con esas fórmulas sobre los datos del dataset, contrastar que coincidan con la función de ajuste de Python (`np.polyfit`) e informar la recta final del modelo.
-
 Evaluando las sumatorias sobre las $n \= 731$ observaciones de `temp` ($x$) y `cnt` ($y$) se obtienen los valores escalares:
 
 ==== Medias muestrales
 
-- $macron(x) \= #ltemp.xmean$
-- $macron(y) \= #ltemp.ymean$
+  - $macron(x) \= #ltemp.xmean$
+  - $macron(y) \= #ltemp.ymean$
 
 ==== Sumas de Variabilidad
-- $S_"xx" \= #ltemp.sxx$
-- $S_"xy" \= #ltemp.sxy$
+
+  - $S_"xx" \= #ltemp.sxx$
+  - $S_"xy" \= #ltemp.sxy$
 
 ==== Coeficientes analíticos
 
 - $β_1 = S_(x y) / S_(x x) = #ltemp.sxy / #ltemp.sxx approx #ltemp.beta1$
 - $β_0 = macron(y) - beta_1 macron(x) = #ltemp.ymean - #ltemp.beta1 * #ltemp.xmean approx #ltemp.beta0$
 
-Ajuste por librería (np.polyfit(x, y, 1)):
+==== Ajuste por librería (`np.polyfit(x, y, 1)`):
 
 - $β_"1,lib" = #ltemp.beta1_lib$
 - $β_"0,lib" = #ltemp.beta0_lib$
 
-La discrepancia numérica es nula ($< 10^(-6)$), confirmando que las herramientas computacionales resuelven este mismo sistema analítico de derivadas parciales. Asimismo, coincide con los valores reportados en la tabla de regresión simple de la Parte B.2.
+Como se ve, la discrepancia numérica es nula. #footnote[
+  Se aplica redondeo a 4 dígitos. Los valores _reales_ obtenidos en Python fueron: $beta_1 = beta_"1,lib" = 6640.709999$ y $beta_0 = beta_"0,lib" = 1214.642119$
+]
 
-Dando la recta estimada final:
+La recta obtenida es:
 
 $ y = #ltemp.beta0 + #ltemp.beta1 x $
 
-- $β_0 = #ltemp.beta0$: Alquiler esperado base cuando la variable normalizada de temperatura es cero (0 °C de referencia).  
+- $β_0 = #ltemp.beta0$: Alquiler esperado base cuando la variable normalizada de temperatura es cero (0 °C de referencia; fuera del rango observado).
 - $β_1 = #ltemp.beta1$ \> 0: Pendiente de la recta que indica que, según la aproximación lineal global, por cada unidad de incremento en la escala normalizada de temperatura, la demanda total estimada se incrementa en aproximadamente 6641 alquileres diarios (o unos 162 alquileres por cada grado Celsius real al dividir por 41).
-
-Conclusión de A.2: La deducción de las ecuaciones normales confirma que la recta de regresión lineal simple no se define mediante una aproximación visual o empírica, sino como la solución exacta a un problema de optimización continua multivariable que consiste en minimizar la suma de errores cuadráticos anulando el gradiente ($nabla f = 0$) mediante derivadas parciales. Al imponer esta condición, la anulación de la derivada respecto a $b_0$ obliga algebraicamente a que la suma total de residuos sea cero ($sum_(i=1)^n e_i = 0$), forzando a la recta a pasar de manera exacta por el baricentro de los datos $(macron(x), macron(y))$.
-
 
 == A.3 Descenso del gradiente
 
@@ -262,14 +263,13 @@ La suma de los errores al cuadrado define la función de costo en varias variabl
 
 $ f(b) = sum_(i=1)^n [y_i - x_i^T * b]^2 = ||y - X b||^2 $
 
-donde cada fila $x_i^T \= \[1, x_(i 1), x_(i 2), x_(i 3), x_(i 4)\]$ incorpora un 1 para el término independiente $b_0$. El vector gradiente $nabla f(b)$ apunta por definición geométrica en la dirección de máximo crecimiento local de la función con respecto al vector de pesos $b$. Dado que el objetivo es hallar el mínimo de error, desplazarse en sentido opuesto ($-nabla f(b)$) garantiza la mayor tasa de descenso instantáneo en la superficie de pérdida, guiando los parámetros iterativamente hacia el valor óptimo según la regla:
+donde cada fila $x_i^T \= \[1, x_(i 1), x_(i 2), x_(i 3), x_(i 4)\]$ incorpora un 1 para el término independiente $b_0$. El vector gradiente $nabla f(b)$ apunta por definición geométrica en la dirección de máximo crecimiento local de la función con respecto al vector de pesos $b$. Dado que el objetivo es hallar el mínimo de error, desplazarse en sentido opuesto ($-nabla f(b)$) garantiza la mayor tasa de decrecimiento de la función, guiando los parámetros iterativamente hacia el valor óptimo según la regla:
 
 $ b^(k+1) = b^(k) - alpha * nabla f(b^(k)) $
 
-donde derivando analíticamente respecto a cada parámetro bj se obtiene el gradiente matricial compacto:
+Al derivar analíticamente respecto a cada parámetro $b_j$ se obtiene el gradiente matricial compacto:
 
 $ nabla f(b) = -2 X^T (y - X b) $
-
 
 === Parte 2 del A.3: Comportamiento según la Tasa de Aprendizaje ($alpha$)
 
