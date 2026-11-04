@@ -17,31 +17,6 @@ class RegresionMultiple:
         self.r2 = 1 - self.ssr / self.stc
         self.r2_adj = 1 - (1 - self.r2) * (self.n - 1) / (self.n - self.k - 1)
 
-    def descenso_gradiente(self, alpha: float, max_iters: int = 250, tol: float = 1e-2):
-        def _perdida(beta: np.ndarray, x: np.ndarray, y: np.ndarray) -> float:
-            residuos = y - x @ beta
-            return float(np.mean(residuos**2))
-
-
-        def _gradiente(beta: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
-            return -2 * (x.T @ (y - x @ beta)) / len(y)
-
-        beta = np.zeros(self.x_mat.shape[1])
-        historial = [_perdida(beta, self.x_mat, self.y)]
-
-        for _ in range(max_iters):
-            beta_siguiente = beta - alpha * _gradiente(beta, self.x_mat, self.y)
-            perdida = _perdida(beta_siguiente, self.x_mat, self.y)
-            historial.append(perdida)
-            if not np.isfinite(perdida) or perdida > 1e16:
-                break
-            if abs(historial[-2] - perdida) < tol:
-                beta = beta_siguiente
-                break
-            beta = beta_siguiente
-
-        return beta, historial
-
     def to_row(self):
         beta = {
             f"beta{i}": bi

@@ -279,13 +279,13 @@ Ejecutar el algoritmo con tres tasas de aprendizaje: una demasiado pequeña, una
 
 ==== 1. Tasa demasiado pequeña ($alpha = 0.0001$ \- Curva Azul)
 
-El paso vectorial es diminuto. La función de pérdida desciende de forma regular pero extremadamente lenta, requiriendo cientos de pasos para aproximarse al valle del mínimo y quedando lejos de la solución óptima en pocas iteraciones.
+El paso vectorial es diminuto. La función de pérdida desciende de forma regular pero extremadamente lenta, requiriendo miles de pasos para aproximarse al valle del mínimo y quedando lejos de la solución óptima en pocas iteraciones.
 
-==== 2. Tasa adecuada ($alpha = 0.0007$ \- Curva Verde)
+==== 2. Tasa adecuada ($alpha = 0.5$ \- Curva Verde)
 
 El paso se encuentra balanceado con la curvatura de la superficie cuadrática. La pérdida se reduce de manera pronunciada y estable en las primeras iteraciones hasta estabilizarse suavemente en el mínimo sin oscilaciones erráticas.
 
-==== 3. Tasa excesiva / divergente ($alpha = 0.0015$ \- Línea Discontinua Roja)
+==== 3. Tasa excesiva / divergente ($alpha = 0.6$ \- Línea Discontinua Roja)
 
 El paso es mayor al radio de estabilidad del gradiente, lo que hace que la actualización sobrepase el fondo del valle y caiga en una pared opuesta más alta. Esto genera oscilaciones explosivas que incrementan la pérdida exponencialmente ($10^10$) en las primeras iteraciones hasta provocar desbordamiento numérico (overflow).
 
@@ -300,7 +300,7 @@ $ |f(b^(k+1)) - f(b^(k))| < epsilon $
 
 Cuando la diferencia absoluta en el valor de la función de costo entre dos pasos sucesivos es menor a un umbral prefijado (ej. $epsilon = 10^(-2)$ o menor), se concluye que la actualización de parámetros es despreciable y el algoritmo se encuentra en la planicie del mínimo estacionario.
 
-==== 2. Límite de iteraciones máximas (`max_iters = 40`)
+==== 2. Límite de iteraciones máximas (`max_iters = 10000`)
 
 Funciona como salvaguarda algorítmica para interrumpir el bucle en caso de convergencia excesivamente lenta o para detener de forma segura la ejecución cuando una tasa sobredimensionada genera divergencia y valores no numéricos (`NaN` o infinitos).
 
@@ -313,11 +313,7 @@ Funciona como salvaguarda algorítmica para interrumpir el bucle en caso de conv
 #let mco = coeficientes.map(row => row.matricial)
 #let diff = coeficientes.map(row => row.diferencia)
 
-Comparar la solución obtenida mediante el descenso del gradiente con la solución analítica exacta de mínimos cuadrados:
-
-$ beta = (X^T X)^(-1) X^T Y $
-
-correspondiente a la sección B.5. Al contrastar los coeficientes del descenso del gradiente (con tasa adecuada; $alpha = 0.0007$) contra la solución matricial exacta sobre las 731 observaciones de cnt con las cuatro variables climáticas, se obtienen los siguientes valores:
+Al contrastar los coeficientes del descenso del gradiente (con $alpha = 0.1$) contra la solución matricial exacta sobre las 731 observaciones de cnt con las cuatro variables climáticas, se obtienen los siguientes valores:
 
 #show table.cell.where(x: 0): set align(left)
 
@@ -331,14 +327,11 @@ correspondiente a la sección B.5. Al contrastar los coeficientes del descenso d
   [Velocidad del viento (`windspeed`, $β_4$)], [#grad.at(4)],  [#mco.at(4)],  [#diff.at(4)],
 )
 
-==== Interpretación de la comparación:
+A partir de esta comparación podemos observar:
 
-1. Coincidencia unívoca en los signos e impacto físico: Ambos métodos coinciden plenamente en la estructura causal: la temperatura y la sensación térmica poseen coeficientes positivos ($β > 0$), indicando que el buen clima estimula los alquileres; mientras que la humedad y la velocidad del viento poseen coeficientes negativos ($β < 0$), demostrando que el exceso de humedad o vientos fuertes reducen el confort y desincentivan los viajes en bicicleta.
+1. Coincidencia en la correlación de variables: Ambos métodos coinciden plenamente en la estructura: la temperatura y la sensación térmica poseen coeficientes positivos ($β > 0$); mientras que la humedad y la velocidad del viento poseen coeficientes negativos ($β < 0$).
 
-2. Explicación de la diferencia numérica: La discrepancia observada entre el gradiente y el MCO exacto se debe a que el algoritmo se ejecutó con un corte en 40 iteraciones (para poder visualizar las tres tasas de aprendizaje en una misma escala gráfica). Como se aprecia en la curva verde, la función de costo continuaba en trayectoria descendente; al tratarse de un método iterativo sobre datos sin estandarizar, con un mayor número de iteraciones los coeficientes convergen asintóticamente a la solución matricial exacta de mínimos cuadrados.
-
-==== Conclusión de A.3
-Se estableció el puente práctico para escenarios multivariables donde la inversión matricial analítica resulta computacionalmente restrictiva. Mediante el descenso del gradiente en sentido opuesto a la máxima variación local ($-nabla f(b)$), se evidenció la sensibilidad del método ante la tasa de aprendizaje ($alpha$) y la eficacia de los criterios de detención. La convergencia de los coeficientes iterativos hacia la solución matricial exacta de mínimos cuadrados ($beta = (X^T X)^(-1) X^T Y$) ratifica la robustez de los algoritmos de aproximación numérica para el entrenamiento de modelos de regresión múltiple.
+2. Explicación de la diferencia numérica: La discrepancia observada entre el gradiente y el MCO exacto se debe a que el algoritmo corta al alcanzar diferencias menores a la tolerancia configurada (0.01), luego de 8408 iteraciones. Al tratarse de un método iterativo, conforme aumenta el número de iteraciones los coeficientes convergen asintóticamente a la solución matricial exacta de mínimos cuadrados.
 
 = Parte B - Complementos de Estadística
 

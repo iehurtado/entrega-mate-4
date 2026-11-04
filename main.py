@@ -8,6 +8,7 @@ import pandas as pd
 from scipy.stats import t
 import os
 import pandas as pd
+from modelos.descenso import ejecutar_descenso
 from modelos.regresion_cuadratica import RegresionCuadratica
 from modelos.regresion_multiple import RegresionMultiple
 from modelos.regresion_simple import RegresionSimple
@@ -112,29 +113,51 @@ def descenso_gradiente(
 ) -> tuple[np.ndarray, np.ndarray]:
     print("\n=== A.3: Descenso del gradiente ===")
 
-    modelo = RegresionMultiple(data[FEATURES], data['cnt'])
+    x, y = data[FEATURES], data['cnt']
+    modelo = RegresionMultiple(x, y) # Calcula beta en forma matricial
 
     # La pérdida media mantiene tasas de aprendizaje manejables para el dataset completo.
     tasas = {
-        "pequeña": (0.01, "blue"),
-        "adecuada": (0.10, "green"),
-        "excesiva": (0.60, "red"),
+        "pequeña": (0.0001, "blue"),
+        "adecuada": (0.5, "green"),
+        "excesiva": (0.6, "red"),
     }
 
-    resultados = {
-        nombre: modelo.descenso_gradiente(alpha)
-        for nombre, (alpha, _) in tasas.items()
-    }
+    resultados = {}
 
-    for nombre, (alpha, _) in tasas.items():
-        _, historial = resultados[nombre]
+    fig, ax = plt.subplots(figsize=(9, 5))
+
+    for nombre, (alpha, color) in tasas.items():
+        beta, historial = ejecutar_descenso(x, y, alpha, max_iters=10000)
+
         print(
             f"Tasa {nombre} (α={alpha}): "
             f"pérdida inicial={historial[0]:.2f}, "
             f"final={historial[-1]:.2f}, iteraciones={len(historial) - 1}"
         )
 
-    tabla = pd.DataFrame(
+        resultados[nombre] = (beta, historial)
+
+        ax.plot(
+            range(len(historial)),
+            historial,
+            label=f"{nombre.capitalize()} (α={alpha})",
+            color=color,
+            linestyle="--" if nombre == "excesiva" else "-",
+            lw=2,
+        )
+
+    ax.set_xlabel("Número de iteración (k)")
+    ax.set_ylabel("Pérdida cuadrática media")
+    ax.set_title("A.3: Evolución de la pérdida según la tasa de aprendizaje")
+    ax.set_ylim(0, resultados["pequeña"][1][0] * 1.25)
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(output_dir / "a3_descenso_gradiente.png", dpi=150)
+    plt.close(fig)
+
+    coefs = pd.DataFrame(
         {
             "coef": [f"beta{i}" for i in range(modelo.k + 1)],
             "gradiente": resultados["adecuada"][0],
@@ -142,13 +165,12 @@ def descenso_gradiente(
         }
     )
 
+    coefs['diferencia'] = np.abs(coefs['gradiente'] - coefs['matricial'])
+
     print("Comparación con mínimos cuadrados (tasa adecuada):")
-    print(tabla.to_string(float_format=lambda v: f"{v:,.4f}"))
+    print(coefs.to_string(float_format=lambda v: f"{v:,.4f}"))
 
-    graficar_descenso(resultados, tasas, output_dir)
-
-    tabla['diferencia'] = np.abs(tabla['gradiente'] - tabla['matricial'])
-    tabla.to_json(output_dir / "coeficientes.json", index=False, orient='records', double_precision=4)
+    coefs.to_json(output_dir / "coeficientes.json", index=False, orient='records', double_precision=4)
     return resultados["adecuada"][0], modelo.beta
 
 
@@ -262,32 +284,6 @@ def regresion_multiple(
     tabla.to_json(output_dir / "multiple.json", index=False, orient='records', double_precision=4)
     return tabla
 
-
-def graficar_descenso(
-    resultados: Mapping[str,Tuple[ArrayLike, List[float]]],
-    tasas: Dict[str, Tuple[float, str]],
-    output_dir: Path
-):
-    fig, ax = plt.subplots(figsize=(9, 5))
-    for nombre, (alpha, color) in tasas.items():
-        historial = resultados[nombre][1]
-        ax.plot(
-            range(len(historial)),
-            historial,
-            label=f"{nombre.capitalize()} (α={alpha})",
-            color=color,
-            linestyle="--" if nombre == "excesiva" else "-",
-            lw=2,
-        )
-    ax.set_xlabel("Número de iteración (k)")
-    ax.set_ylabel("Pérdida cuadrática media")
-    ax.set_title("A.3: Evolución de la pérdida según la tasa de aprendizaje")
-    ax.set_ylim(0, resultados["pequeña"][1][0] * 1.25)
-    ax.grid(True, alpha=0.3)
-    ax.legend()
-    fig.tight_layout()
-    fig.savefig(output_dir / "a3_descenso_gradiente.png", dpi=150)
-    plt.close(fig)
 
 def comparar(modelo: RegresionMultiple, modelo_simple: RegresionSimple):
     print(
