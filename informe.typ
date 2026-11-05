@@ -27,6 +27,34 @@
 
 // ---------------------------------------------------------------------------
 
+#set document(title: "Informe Trabajo Práctico Mate 4")
+#set page(footer: auto, numbering: "1")
+#show math.equation.where(block: true): set block(above: 1.2em, below: 1.8em)
+
+#let azulito = rgb("#0f3d64")
+#let blanco = luma(180)
+#let celestito = rgb("#f2f5f8")
+
+#show title: set text(fill: azulito)
+#show heading: set text(fill: azulito)
+#show heading: set block(above: 1.8em)
+#show heading.where(level: 1): it => underline(it, offset: 0.15em)
+
+#show table: set align(center)
+
+#set table(
+  stroke: (x, y) => if y == 0 { (bottom: 1.5pt + azulito) } else { 0.5pt + blanco },
+  fill: (x, y) => {
+    if y == 0 { azulito }
+    else if calc.even(y) { celestito }
+    else { none }
+  }
+)
+
+#show table.cell.where(y: 0): set text(weight: "bold", fill: white, size: 8pt)
+
+// ---------------------------------------------------------------------------
+
 #title([ Informe Trabajo Práctico Mate 4 ])
 
 = Parte A — Complementos de Análisis Matemático
@@ -81,13 +109,13 @@ De esta manera vemos que a 28.7 °C la tasa cae a solo 8 bicicletas por grado Ce
 
 Para el modelo lineal, tenemos que la derivada es la pendiente de la recta:
 
-$(partial hat(y))/(partial x) = β_1 = #ltemp.beta1$ (constante en todo el dominio).
+$ (partial hat(y))/(partial x) = β_1 = #ltemp.beta1 $
 
 Esto quiere decir que la demanda crece en forma constante a medida que aumenta la temperatura; algo que resulta contraituitivo: para el modelo lineal, subir de 8 °C a 9 °C produce el mismo incremento de viajes que subir de 35 °C a 36 °C (+162 bicis/°C, calculado como #ltemp.beta1 / 41\), ignorando el efecto del calor en los ciclistas.
 
 En el modelo cuadrático, en cambio, la derivada es una recta decreciente:
 
-$(partial hat(y))/(partial x) = beta_1 + 2 beta_2 = #qtemp.beta1 - #calc.abs(2*qtemp.beta2) x$
+$ (partial hat(y))/(partial x) = beta_1 + 2 beta_2 = #qtemp.beta1 - #calc.abs(2*qtemp.beta2) x $
 
 Esta recta decreciente indica que la demanda aumenta más suavemente a medida que se incrementa la temperatura, hasta darse vuelta por completo cuando la temperatura es demasiado alta. Un modelo como este luce más adecuado: pedalear con un clima templado es agradable y estimula el uso de la bicicleta, pero hacerlo bajo el calor excesivo resulta poco grato, de modo que es esperable que la demanda de bicicletas disminuya a partir de cierto punto.
 
@@ -373,8 +401,6 @@ Realizamos un análisis de regresión lineal simple entre `cnt` y diferentes var
   #table(
     columns: 5,
     align: right,
-    inset: 3pt,
-    stroke: 0.5pt,
     table.header(
       [],
       [$hat(beta)_1$],
@@ -397,8 +423,6 @@ Realizamos un análisis de regresión lineal simple entre `cnt` y diferentes var
   #table(
     columns: 6,
     align: right,
-    inset: 3pt,
-    stroke: 0.5pt,
     table.header(
       [],
       [$hat(sigma)^2$],
@@ -424,7 +448,6 @@ Realizamos un análisis de regresión lineal simple entre `cnt` y diferentes var
 Observando la tabla encontramos que la regresión sobre la variable `atemp` muestra el mejor valor para $R^2$. Tomamos esto como un indicio de que esta regresión explica mejor la variabilidad de la muestra. Además, la utilización de la sensación térmica como predictor parecería tener más relación con el problema presentado.
 
 A continuación presentamos el gráfico de dispersión, junto con la recta de regresión del modelo:
-
 #image("outputs/b2_regresion_atemp.png")
 
 
@@ -492,7 +515,7 @@ $
 Con $n = 731$, $alpha = 0.05$ y $x^* = 0.65$ se obtiene:
 
 $
-  "IC"(E(Y | x^*)) = [#ltemp.icm_inf, #ltemp.icm_sup]
+  "IC"(E(Y | x^*)) = [#ltemp.icm_inf \; #ltemp.icm_sup]
 $
 
 Es decir, para una temperatura normalizada de 0.65, la cantidad esperada de alquileres se encuentra, con un 95 % de probabilidad, entre #ltemp.icm_inf y #ltemp.icm_sup bicicletas.
@@ -508,7 +531,7 @@ $
 Con la misma elección de $x^*$, resulta:
 
 $
-  "IP"(Y | x^*) = [#ltemp.ip_inf, #ltemp.ip_sup]
+  "IP"(Y | x^*) = [#ltemp.ip_inf \; #ltemp.ip_sup]
 $
 
 Este intervalo es más ancho que el anterior, porque incorpora no solo la incertidumbre en la media esperada, sino también la variabilidad aleatoria propia de una observación individual. En consecuencia, para una temperatura de 0.65 la predicción puntual de alquileres es de #y_media bicicletas, pero un valor futuro individual podría caer entre #ltemp.ip_inf y #ltemp.ip_sup en aproximadamente el 95 % de los casos.
@@ -537,45 +560,49 @@ $
 
 Calculamos la variabilidad y coeficientes de determinación del modelo:
 
-$ "SS"_r = "SCE" = sum (y_i - hat(y)_i)^2 = #multiple.ssr $
-$ sigma^2 = "SS"_r / (n-k-1) = #multiple.ssr / (#multiple.n - #multiple.k - 1) = #{multiple.sigma2} $
-$ R^2 = 1 - "SCE" / "STC" = 1 - #multiple.ssr / #multiple.stc = #multiple.r2 $
-$ R^2_"adj" = 1 - (1 - R^2) (n-k) / (n-k-1) = 1 - (1 - #multiple.r2) (#multiple.n - #multiple.k) / (#multiple.n - #multiple.k - 1) = #multiple.r2_adj $
+
+$
+  "SS"_r &= "SCE" = sum (y_i - hat(y)_i)^2 = #multiple.ssr \
+  sigma^2 &= "SS"_r / (n-k-1) = #multiple.ssr / (#multiple.n - #multiple.k - 1) = #{multiple.sigma2} \
+  R^2 &= 1 - "SCE" / "STC" = 1 - #multiple.ssr / #multiple.stc = #multiple.r2 \
+  R^2_"adj" &= 1 - (1 - R^2) (n-k) / (n-k-1) = 1 - (1 - #multiple.r2) (#multiple.n - #multiple.k) / (#multiple.n - #multiple.k - 1) = #multiple.r2_adj
+$
 
 Vemos que el valor ajustado de $R^2$ ronda el 46.3%. Si comparamos este valor con el $R^2$ obtenido para el modelo lineal de B.2, vemos que aquél es menor. Esto sugiere que el modelo múltiple se ajusta mejor.
-
-Considerando, que la variable utilizada en el modelo simple es la sensación térmica, que se calcula en base a temperatura, humedad y velocidad del viento, no era previsible que el uso de estas tres variables agregara nueva información al modelo.
 
 
 
 #pagebreak()
 
+#set page(flipped: true, margin: 0.8cm)
+
 = Anexo I — Bitácora de uso de inteligencia artificial
 
 Obligatoria. Una fila por interacción; agregar tantas como sea necesario.
 
-#let bitacora = csv("anexo_ia.csv")
+#let bitacora = csv("anexo_ia.csv", row-type: dictionary).sorted(key: x => x.Fecha)
 
-#set table(
-  stroke: (x, y) => if y == 0 { (bottom: 1.5pt + rgb("#0f3d64")) } else { 0.5pt + luma(180) },
-  fill: (x, y) => {
-    if y == 0 { rgb("#0f3d64") }
-    else if calc.even(y) { rgb("#f2f5f8") }
-    else { none }
-  }
+
+#set text(size: 7pt)
+
+#let cols = (
+  "Fecha",
+  "Herramienta",
+  "Qué se le pidió",
+  "Resumen de la respuesta",
+  "¿Se aceptó?",
+  "Cambios realizados y motivo",
+  "Ítem afectado",
 )
 
-#show table.cell.where(y: 0): set text(weight: "bold", fill: white, size: 8pt)
-#set text(size: 7.5pt)
-
 #table(
-  columns: (0.4fr, 0.9fr, 1.1fr, 1.8fr, 2.1fr, 0.9fr, 2fr, 0.9fr),
+  columns: (0.9fr, 1.1fr, 1.8fr, 2.1fr, 0.9fr, 2fr, 0.9fr),
   align: (col, row) => {
     if row == 0 { center + horizon }
     else if col == 0 { center + horizon }
     else if col == 5 { center + horizon }
     else { left + horizon }
   },
-  table.header(..bitacora.first().map(cell => [*#cell*])),
-  ..bitacora.slice(1).flatten()
+  table.header(..cols.map(name => [*#name*])),
+  ..bitacora.map(row => cols.map(col => [#row.at(col)])).flatten(),
 )
