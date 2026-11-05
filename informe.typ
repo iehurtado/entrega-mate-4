@@ -27,8 +27,8 @@
 
 // ---------------------------------------------------------------------------
 
-#set document(title: "Informe Trabajo Práctico Mate 4")
-#set page(footer: auto, numbering: "1")
+#let titulo = "Entrega Matemática IV — 2026"
+#set document(title: titulo)
 #show math.equation.where(block: true): set block(above: 1.2em, below: 1.8em)
 
 #let azulito = rgb("#0f3d64")
@@ -55,7 +55,25 @@
 
 // ---------------------------------------------------------------------------
 
-#title([ Informe Trabajo Práctico Mate 4 ])
+#align(center)[
+  #text(size: 1.4em)[
+    Facultad de Informática - Universidad de La Plata
+  ]
+
+  #block(above: 1.2em, text(size: 1.6em, title(titulo)))
+
+  Conjunto B - Sistema de bicicletas compartidas
+
+  = Integrantes
+
+  #list(marker: "",
+    [César Rea (16289/8)],
+    [Ignacio Hurtado (15571/3)],
+    [Tiago López (21542/5)],
+  )
+]
+
+#pagebreak()
 
 = Parte A — Complementos de Análisis Matemático
 
