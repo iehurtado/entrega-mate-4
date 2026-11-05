@@ -53,6 +53,11 @@
 
 #show table.cell.where(y: 0): set text(weight: "bold", fill: white, size: 8pt)
 
+#show link: it => {
+  set text(fill: azulito)
+  underline(it)
+}
+
 // ---------------------------------------------------------------------------
 
 #align(center)[
@@ -74,6 +79,10 @@
 ]
 
 #pagebreak()
+
+= Referencia
+
+  Los resultados presentados en este informe se computan utilizando un script. El script está disponible en #link("https://github.com/iehurtado/entrega-mate-4", [GitHub]) (#link("https://github.com/iehurtado/entrega-mate-4/blob/main/main.py", [enlace directo])) y se elaboró en base al #link("https://colab.research.google.com/drive/1ZxXnT_2MpfkWY3jrvXM5Yu-TZNRd4SRs", [notebook de Google Colab]) utilizado para realizar el análisis (puede contener código o valores desactualizados con respecto al script).
 
 = Parte A — Complementos de Análisis Matemático
 
